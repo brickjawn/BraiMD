@@ -1,0 +1,261 @@
+<%- include('partials/header') %>
+
+<div class="max-w-4xl">
+  <h1 class="text-2xl font-bold mb-2">Add Skill</h1>
+  <p class="text-slate-400 text-sm mb-6">Choose a template or start from scratch. The system handles YAML formatting automatically.</p>
+
+  <!-- ============================================================ -->
+  <!-- Template Selector -->
+  <!-- ============================================================ -->
+  <div class="mb-6">
+    <label class="block text-sm font-medium text-slate-300 mb-2">Start from a Template</label>
+    <div class="flex flex-wrap gap-2">
+      <button type="button" data-template="blank"
+        class="template-btn bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
+        <i class="fa-solid fa-file text-slate-500"></i> Blank
+      </button>
+      <button type="button" data-template="agent-sop"
+        class="template-btn bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
+        <i class="fa-solid fa-clipboard-list text-indigo-400"></i> Agent SOP
+      </button>
+      <button type="button" data-template="code-analysis"
+        class="template-btn bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
+        <i class="fa-solid fa-code text-emerald-400"></i> Code Analysis
+      </button>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- Skill Form -->
+  <!-- ============================================================ -->
+  <form id="skill-form" class="space-y-5">
+    <!-- Skill Name -->
+    <div>
+      <label for="skill-name" class="block text-sm font-medium text-slate-300 mb-1">Skill Name</label>
+      <input type="text" id="skill-name" required
+        class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-gray-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+        placeholder="e.g. MySQL Database Setup">
+    </div>
+
+    <!-- Description -->
+    <div>
+      <label for="skill-description" class="block text-sm font-medium text-slate-300 mb-1">Description</label>
+      <input type="text" id="skill-description"
+        class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-gray-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+        placeholder="Brief summary of what this skill teaches an agent.">
+    </div>
+
+    <!-- Triggers (Tagify) -->
+    <div>
+      <label for="triggers-input" class="block text-sm font-medium text-slate-300 mb-1">Trigger Keywords</label>
+      <input id="triggers-input"
+        class="w-full"
+        placeholder="Type a keyword and press Enter...">
+      <p class="text-xs text-slate-500 mt-1">These are the keywords an AI agent will search by.</p>
+    </div>
+
+    <!-- Content (EasyMDE) -->
+    <div>
+      <label for="content-editor" class="block text-sm font-medium text-slate-300 mb-1">Skill Content (Markdown)</label>
+      <textarea id="content-editor"></textarea>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex items-center gap-3 pt-2">
+      <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
+        <i class="fa-solid fa-upload"></i> Upload Skill
+      </button>
+      <a href="/dashboard" class="text-slate-400 hover:text-slate-300 text-sm">Cancel</a>
+    </div>
+  </form>
+</div>
+
+<!-- EasyMDE + Tagify JS -->
+<script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.min.js"></script>
+<script>
+  // ============================================================
+  // Template Definitions
+  // ============================================================
+  const templates = {
+    'blank': {
+      name: '',
+      description: '',
+      triggers: [],
+      content: '',
+    },
+    'agent-sop': {
+      name: 'Agent Standard Operating Procedure',
+      description: 'Step-by-step workflow for an AI agent to follow.',
+      triggers: ['sop', 'procedure', 'workflow', 'automation'],
+      content: `# Task Overview
+Describe what this skill accomplishes and when an agent should use it.
+
+## Prerequisites
+- List any tools, credentials, or prior knowledge required.
+- Reference other BraiMD skills by trigger name if applicable.
+
+## Steps
+
+### Step 1: Initialization
+Describe the setup or preparation phase.
+
+### Step 2: Execution
+Detail the core actions the agent must perform.
+
+### Step 3: Validation
+How should the agent verify that the task completed successfully?
+
+## Error Handling
+| Error | Cause | Resolution |
+|-------|-------|------------|
+| Timeout | Network latency | Retry with exponential backoff |
+| Permission denied | Missing credentials | Halt and notify developer |
+
+## Output Format
+Describe the expected output the agent should return upon completion.
+`,
+    },
+    'code-analysis': {
+      name: 'Code Analysis Protocol',
+      description: 'Analyze a codebase for quality, security, and best practices.',
+      triggers: ['code_review', 'analyze_code', 'code_quality', 'security_audit'],
+      content: `# Code Analysis Protocol
+
+## Scope
+Define the files, modules, or directories to analyze.
+
+## Checklist
+
+### 1. Security Review
+- [ ] Check for SQL injection vectors (raw queries, string interpolation)
+- [ ] Verify input validation at all system boundaries
+- [ ] Scan for hardcoded secrets, API keys, or credentials
+- [ ] Review authentication and authorization logic
+
+### 2. Code Quality
+- [ ] Identify unused variables, imports, and dead code
+- [ ] Check for consistent error handling patterns
+- [ ] Review naming conventions and code organization
+- [ ] Flag functions exceeding 50 lines for potential refactoring
+
+### 3. Performance
+- [ ] Identify N+1 query patterns
+- [ ] Check for missing database indexes on frequently queried columns
+- [ ] Review async/await usage for unnecessary blocking
+
+### 4. Dependencies
+- [ ] Run \`npm audit\` for known vulnerabilities
+- [ ] Check for outdated major versions
+- [ ] Verify license compatibility
+
+## Output
+Summarize findings in a table:
+
+| Severity | File | Line | Issue | Recommendation |
+|----------|------|------|-------|----------------|
+| HIGH | | | | |
+| MEDIUM | | | | |
+| LOW | | | | |
+`,
+    },
+  };
+
+  // ============================================================
+  // Initialize Editor & Tags
+  // ============================================================
+  const easyMDE = new EasyMDE({
+    element: document.getElementById('content-editor'),
+    spellChecker: false,
+    placeholder: 'Write your skill instructions in Markdown...',
+    toolbar: ['bold', 'italic', 'heading', '|', 'code', 'quote', 'unordered-list', 'ordered-list', '|', 'link', 'table', '|', 'preview', 'side-by-side', 'fullscreen', '|', 'guide'],
+    status: ['lines', 'words'],
+    minHeight: '300px',
+  });
+
+  const tagify = new Tagify(document.getElementById('triggers-input'), {
+    maxTags: 15,
+    placeholder: 'Add triggers...',
+  });
+
+  // ============================================================
+  // Template Selector Logic
+  // ============================================================
+  document.querySelectorAll('.template-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.template;
+      const tpl = templates[key];
+      if (!tpl) return;
+
+      // Highlight selected template button
+      document.querySelectorAll('.template-btn').forEach(b => {
+        b.classList.remove('border-indigo-500', 'bg-indigo-500/10');
+        b.classList.add('border-slate-700');
+      });
+      btn.classList.add('border-indigo-500', 'bg-indigo-500/10');
+      btn.classList.remove('border-slate-700');
+
+      // Fill form fields
+      document.getElementById('skill-name').value = tpl.name;
+      document.getElementById('skill-description').value = tpl.description;
+
+      // Set Tagify tags
+      tagify.removeAllTags();
+      if (tpl.triggers.length > 0) {
+        tagify.addTags(tpl.triggers);
+      }
+
+      // Set EasyMDE content
+      easyMDE.value(tpl.content);
+
+      showToast(key === 'blank' ? 'Cleared.' : 'Template loaded.', key === 'blank' ? 'warning' : 'success');
+    });
+  });
+
+  // ============================================================
+  // Form Submission — YAML Assembly + POST
+  // ============================================================
+  document.getElementById('skill-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const name = document.getElementById('skill-name').value.trim();
+    const description = document.getElementById('skill-description').value.trim();
+    const triggers = tagify.value.map(tag => tag.value);
+    const content = easyMDE.value();
+
+    if (!name) { showToast('Skill name is required.', 'error'); return; }
+    if (!content) { showToast('Skill content cannot be empty.', 'error'); return; }
+
+    // Programmatically build YAML frontmatter
+    const frontmatter = [
+      '---',
+      'name: "' + name.replace(/"/g, '\\"') + '"',
+      'description: "' + description.replace(/"/g, '\\"') + '"',
+      'triggers: ' + JSON.stringify(triggers),
+      '---',
+    ].join('\n');
+
+    const markdown = frontmatter + '\n' + content;
+
+    try {
+      const res = await fetch('/api/skills', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: 1, markdown }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        showToast('Skill "' + data.name + '" saved!');
+        setTimeout(() => { window.location.href = '/dashboard/skills/' + data.id; }, 800);
+      } else {
+        showToast(data.error || 'Failed to save skill.', 'error');
+      }
+    } catch (err) {
+      showToast('Network error. Is the server running?', 'error');
+    }
+  });
+</script>
+
+<%- include('partials/footer') %>

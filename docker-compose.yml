@@ -1,0 +1,36 @@
+services:
+  app:
+    build: .
+    container_name: braimd-app
+    restart: unless-stopped
+    network_mode: host
+    env_file: .env
+    volumes:
+      - ./src:/app/src
+      - ./views:/app/views
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: docker.io/library/mysql:8.0
+    container_name: braimd-db
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    env_file: .env
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./src/db/schema.sql:/docker-entrypoint-initdb.d/schema.sql:Z
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "${DB_USER}", "-p${DB_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  db_data:

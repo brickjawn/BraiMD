@@ -1,0 +1,56 @@
+<%- include('partials/header') %>
+
+<h1 class="text-2xl font-bold mb-6">Agent Logs</h1>
+
+<% if (logs.length === 0) { %>
+  <div class="text-center py-20 text-slate-500">
+    <i class="fa-solid fa-robot text-5xl mb-4 block"></i>
+    <p class="text-lg">No agent queries yet.</p>
+    <p class="text-sm mt-1">Trigger the API: <code class="bg-slate-800 px-2 py-0.5 rounded text-indigo-300">GET /api/skills?trigger=keyword</code></p>
+  </div>
+<% } else { %>
+  <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-slate-800 text-slate-400 text-left">
+          <th class="px-5 py-3 font-medium">ID</th>
+          <th class="px-5 py-3 font-medium">Skill</th>
+          <th class="px-5 py-3 font-medium">Query</th>
+          <th class="px-5 py-3 font-medium">Outcome</th>
+          <th class="px-5 py-3 font-medium">Agent</th>
+          <th class="px-5 py-3 font-medium">Client IP</th>
+          <th class="px-5 py-3 font-medium">Timestamp</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-800">
+        <% logs.forEach(log => { %>
+          <tr class="hover:bg-slate-800/50 transition-colors">
+            <td class="px-5 py-3 text-slate-500"><%= log.id %></td>
+            <td class="px-5 py-3">
+              <% if (log.skill_name) { %>
+                <a href="/dashboard/skills/<%= log.skill_id %>" class="text-indigo-400 hover:text-indigo-300"><%= log.skill_name %></a>
+              <% } else { %>
+                <span class="text-slate-500">—</span>
+              <% } %>
+            </td>
+            <td class="px-5 py-3 text-slate-400 text-xs font-mono"><%= log.query || '\u2014' %></td>
+            <td class="px-5 py-3">
+              <% if (log.outcome === 'success') { %>
+                <span class="bg-emerald-500/20 text-emerald-400 text-xs px-2.5 py-1 rounded-full font-medium"><%= log.outcome %></span>
+              <% } else if (log.outcome === 'prerequisite_blocked') { %>
+                <span class="bg-amber-500/20 text-amber-400 text-xs px-2.5 py-1 rounded-full font-medium"><%= log.outcome %></span>
+              <% } else { %>
+                <span class="bg-slate-500/20 text-slate-400 text-xs px-2.5 py-1 rounded-full font-medium"><%= log.outcome %></span>
+              <% } %>
+            </td>
+            <td class="px-5 py-3 text-slate-400 text-xs font-mono"><%= log.agent_id || '\u2014' %></td>
+            <td class="px-5 py-3 text-slate-500 text-xs font-mono"><%= log.client_ip || '\u2014' %></td>
+            <td class="px-5 py-3 text-slate-500 text-xs"><%= new Date(log.used_at).toLocaleString() %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+<% } %>
+
+<%- include('partials/footer') %>

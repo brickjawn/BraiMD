@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BraiMD — <%= typeof title !== 'undefined' ? title : 'Dashboard' %></title>
+
+  <!-- Tailwind CSS (CDN JIT) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { darkMode: 'class' };
+  </script>
+
+  <!-- EasyMDE -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
+
+  <!-- Tagify -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.css">
+
+  <!-- FontAwesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <style>
+    /* EasyMDE dark mode overrides */
+    .EasyMDEContainer .CodeMirror {
+      background: #1e293b; color: #e2e8f0; border-color: #334155;
+    }
+    .EasyMDEContainer .editor-toolbar {
+      border-color: #334155; background: #0f172a;
+    }
+    .EasyMDEContainer .editor-toolbar button { color: #94a3b8 !important; }
+    .EasyMDEContainer .editor-toolbar button:hover,
+    .EasyMDEContainer .editor-toolbar button.active {
+      background: #334155; color: #e2e8f0 !important;
+    }
+    .EasyMDEContainer .editor-preview {
+      background: #1e293b; color: #e2e8f0;
+    }
+    .EasyMDEContainer .editor-statusbar { color: #64748b; }
+    .CodeMirror-cursor { border-left-color: #e2e8f0 !important; }
+    .editor-toolbar.disabled-for-preview button:not(.no-disable) { opacity: 0.4; }
+
+    /* Tagify dark mode overrides */
+    .tagify {
+      --tags-border-color: #334155;
+      --tags-bg: #1e293b;
+      --tags-focus-border-color: #6366f1;
+      --tag-bg: #334155;
+      --tag-text-color: #e2e8f0;
+      --tag-remove-bg: rgba(239,68,68,0.3);
+      --tag-remove-btn-color: #f87171;
+      --placeholder-color: #64748b;
+      --input-color: #e2e8f0;
+    }
+
+    /* vis-network manipulation toolbar dark overrides */
+    .vis-manipulation { background: #0f172a !important; border: none !important; border-bottom: 1px solid #1e293b !important; }
+    .vis-button { color: #94a3b8 !important; }
+    .vis-button:hover { color: #e2e8f0 !important; box-shadow: none !important; }
+    .vis-close { color: #94a3b8 !important; }
+    .vis-close:hover { color: #f87171 !important; }
+  </style>
+</head>
+<body class="bg-slate-950 text-gray-100 min-h-screen">
+
+  <!-- Sidebar -->
+  <aside class="fixed left-0 top-0 h-full w-60 bg-slate-900 border-r border-slate-800 flex flex-col z-50">
+    <div class="p-5 border-b border-slate-800">
+      <a href="/dashboard" class="text-xl font-bold text-indigo-400 tracking-tight flex items-center gap-2">
+        <i class="fa-solid fa-brain"></i> BraiMD
+      </a>
+      <p class="text-xs text-slate-500 mt-1">AI Skill Vault</p>
+    </div>
+    <nav class="flex-1 p-3 space-y-1">
+      <a href="/dashboard" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors <%= title === 'Dashboard' ? 'bg-indigo-500/10 text-indigo-400' : 'text-slate-400 hover:bg-slate-800 hover:text-gray-200' %>">
+        <i class="fa-solid fa-table-columns w-5 text-center"></i> Dashboard
+      </a>
+      <a href="/dashboard/create" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors <%= title === 'Upload Skill' ? 'bg-indigo-500/10 text-indigo-400' : 'text-slate-400 hover:bg-slate-800 hover:text-gray-200' %>">
+        <i class="fa-solid fa-file-circle-plus w-5 text-center"></i> Add Skill
+      </a>
+      <a href="/dashboard/tree" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors <%= title === 'Skill Tree' ? 'bg-indigo-500/10 text-indigo-400' : 'text-slate-400 hover:bg-slate-800 hover:text-gray-200' %>">
+        <i class="fa-solid fa-diagram-project w-5 text-center"></i> Skill Tree
+      </a>
+      <a href="/dashboard/logs" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors <%= title === 'Agent Logs' ? 'bg-indigo-500/10 text-indigo-400' : 'text-slate-400 hover:bg-slate-800 hover:text-gray-200' %>">
+        <i class="fa-solid fa-robot w-5 text-center"></i> Agent Logs
+      </a>
+      <div class="border-t border-slate-800 my-2"></div>
+      <a href="/dashboard/help" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors <%= title === 'Help' ? 'bg-indigo-500/10 text-indigo-400' : 'text-slate-400 hover:bg-slate-800 hover:text-gray-200' %>">
+        <i class="fa-solid fa-book w-5 text-center"></i> Help
+      </a>
+    </nav>
+    <div class="p-4 border-t border-slate-800">
+      <p class="text-xs text-slate-600">v1.0 &mdash; brickjawn</p>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="ml-60 p-8 min-h-screen">

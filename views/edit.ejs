@@ -1,0 +1,106 @@
+<%- include('partials/header') %>
+
+<div class="max-w-4xl">
+  <h1 class="text-2xl font-bold mb-6">Edit Skill</h1>
+
+  <form id="skill-form" data-skill-id="<%= skill.id %>" class="space-y-5">
+    <!-- Skill Name -->
+    <div>
+      <label for="skill-name" class="block text-sm font-medium text-slate-300 mb-1">Skill Name</label>
+      <input type="text" id="skill-name" required
+        class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-gray-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+        value="<%= skill.name %>">
+    </div>
+
+    <!-- Description -->
+    <div>
+      <label for="skill-description" class="block text-sm font-medium text-slate-300 mb-1">Description</label>
+      <input type="text" id="skill-description"
+        class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-gray-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+        value="<%= skill.description || '' %>">
+    </div>
+
+    <!-- Triggers (Tagify) -->
+    <div>
+      <label for="triggers-input" class="block text-sm font-medium text-slate-300 mb-1">Trigger Keywords</label>
+      <input id="triggers-input" class="w-full" value="<%= JSON.stringify(triggers) %>">
+    </div>
+
+    <!-- Content (EasyMDE) -->
+    <div>
+      <label for="content-editor" class="block text-sm font-medium text-slate-300 mb-1">Skill Content (Markdown)</label>
+      <textarea id="content-editor"></textarea>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex items-center gap-3 pt-2">
+      <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
+        <i class="fa-solid fa-floppy-disk"></i> Save Changes
+      </button>
+      <a href="/dashboard/skills/<%= skill.id %>" class="text-slate-400 hover:text-slate-300 text-sm">Cancel</a>
+    </div>
+  </form>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.min.js"></script>
+<script>
+  // Pre-fill EasyMDE with existing content
+  const easyMDE = new EasyMDE({
+    element: document.getElementById('content-editor'),
+    spellChecker: false,
+    initialValue: <%- JSON.stringify(skill.content) %>,
+    toolbar: ['bold', 'italic', 'heading', '|', 'code', 'quote', 'unordered-list', 'ordered-list', '|', 'link', 'table', '|', 'preview', 'side-by-side', 'fullscreen', '|', 'guide'],
+    status: ['lines', 'words'],
+    minHeight: '300px',
+  });
+
+  // Pre-fill Tagify with existing triggers
+  const tagify = new Tagify(document.getElementById('triggers-input'), {
+    maxTags: 15,
+  });
+
+  // Form submission — rebuild YAML frontmatter + markdown, PUT to API
+  document.getElementById('skill-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const skillId = e.target.dataset.skillId;
+    const name = document.getElementById('skill-name').value.trim();
+    const description = document.getElementById('skill-description').value.trim();
+    const triggers = tagify.value.map(tag => tag.value);
+    const content = easyMDE.value();
+
+    if (!name) { showToast('Skill name is required.', 'error'); return; }
+
+    const frontmatter = [
+      '---',
+      'name: "' + name.replace(/"/g, '\\"') + '"',
+      'description: "' + description.replace(/"/g, '\\"') + '"',
+      'triggers: ' + JSON.stringify(triggers),
+      '---',
+    ].join('\n');
+
+    const markdown = frontmatter + '\n' + content;
+
+    try {
+      const res = await fetch('/api/skills/' + skillId, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ markdown }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        showToast('Skill updated!');
+        setTimeout(() => { window.location.href = '/dashboard/skills/' + skillId; }, 800);
+      } else {
+        showToast(data.error || 'Failed to update.', 'error');
+      }
+    } catch (err) {
+      showToast('Network error.', 'error');
+    }
+  });
+</script>
+
+<%- include('partials/footer') %>

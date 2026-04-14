@@ -1,0 +1,131 @@
+<%- include('partials/header') %>
+
+<div class="flex items-center justify-between mb-4">
+  <h1 class="text-2xl font-bold">Skill Tree</h1>
+  <p class="text-xs text-slate-500">Click <strong>"Add Edge"</strong> in the toolbar, then drag from prerequisite &rarr; dependent skill.</p>
+</div>
+
+<div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+  <div id="skill-tree" style="height: calc(100vh - 200px);"></div>
+</div>
+
+<script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', async () => {
+    const container = document.getElementById('skill-tree');
+    let nodeSkillMap = {}; // Maps vis node ID → skill ID for edge creation
+
+    try {
+      const res = await fetch('/api/tree-data');
+      const data = await res.json();
+
+      // Build the node ID → skill ID lookup
+      data.nodes.forEach(n => { nodeSkillMap[n.id] = n.skill_id; });
+
+      const nodes = new vis.DataSet(data.nodes.map(n => ({
+        id: n.id,
+        label: n.label,
+        shape: 'box',
+        color: { background: '#4f46e5', border: '#6366f1', highlight: { background: '#6366f1', border: '#818cf8' }, hover: { background: '#6366f1', border: '#818cf8' } },
+        font: { color: '#fff', size: 14, face: 'system-ui, sans-serif' },
+        borderWidth: 2,
+        shadow: { enabled: true, color: 'rgba(0,0,0,0.3)', size: 8 },
+        margin: 10,
+      })));
+
+      const edges = new vis.DataSet(data.edges.map(e => ({
+        id: e.id,
+        from: e.from,
+        to: e.to,
+        arrows: { to: { enabled: true, scaleFactor: 0.8 } },
+        color: { color: '#475569', highlight: '#6366f1', hover: '#6366f1' },
+        width: 2,
+      })));
+
+      const options = {
+        layout: {
+          hierarchical: { direction: 'UD', sortMethod: 'directed', levelSeparation: 120, nodeSpacing: 180 },
+        },
+        physics: false,
+        interaction: { dragNodes: true, zoomView: true, dragView: true, hover: true },
+        manipulation: {
+          enabled: true,
+          addNode: false,
+          editNode: false,
+          deleteNode: false,
+
+          // Drag-to-connect: fires when user draws an edge between two nodes
+          addEdge: async (edgeData, callback) => {
+            if (edgeData.from === edgeData.to) {
+              showToast('A skill cannot be its own prerequisite.', 'error');
+              return callback(null);
+            }
+
+            const fromSkillId = nodeSkillMap[edgeData.from];
+            const toSkillId = nodeSkillMap[edgeData.to];
+
+            try {
+              const res = await fetch('/api/edges', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ from_skill_id: fromSkillId, to_skill_id: toSkillId }),
+              });
+              const result = await res.json();
+
+              if (res.ok) {
+                edgeData.id = result.id;
+                edgeData.arrows = { to: { enabled: true, scaleFactor: 0.8 } };
+                edgeData.color = { color: '#475569', highlight: '#6366f1' };
+                edgeData.width = 2;
+                callback(edgeData);
+                showToast('Prerequisite linked!');
+              } else {
+                showToast(result.error, 'error');
+                callback(null);
+              }
+            } catch (err) {
+              showToast('Network error.', 'error');
+              callback(null);
+            }
+          },
+
+          // Click an edge and delete it
+          deleteEdge: async (deleteData, callback) => {
+            const edgeId = deleteData.edges[0];
+            try {
+              const res = await fetch('/api/edges/' + edgeId, { method: 'DELETE' });
+              if (res.ok) {
+                callback(deleteData);
+                showToast('Edge removed.');
+              } else {
+                showToast('Failed to delete edge.', 'error');
+                callback(null);
+              }
+            } catch (err) {
+              showToast('Network error.', 'error');
+              callback(null);
+            }
+          },
+        },
+      };
+
+      const network = new vis.Network(container, { nodes, edges }, options);
+
+      // Double-click a node to navigate to skill view
+      network.on('doubleClick', (params) => {
+        if (params.nodes.length === 1) {
+          const skillId = nodeSkillMap[params.nodes[0]];
+          window.location.href = '/dashboard/skills/' + skillId;
+        }
+      });
+
+      if (data.nodes.length === 0) {
+        container.innerHTML = '<div class="flex items-center justify-center h-full text-slate-500"><div class="text-center"><i class="fa-solid fa-diagram-project text-4xl mb-3 block"></i><p>No nodes yet. Upload skills to populate the tree.</p></div></div>';
+      }
+    } catch (err) {
+      container.innerHTML = '<div class="flex items-center justify-center h-full text-rose-400">Failed to load tree data.</div>';
+    }
+  });
+</script>
+
+<%- include('partials/footer') %>

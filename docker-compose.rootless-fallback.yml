@@ -1,0 +1,10 @@
+services:
+  app:
+    build: .
+    container_name: braimd-app
+    restart: unless-stopped
+    network_mode: host
+    env_file: .env
+    volumes:
+      - ./src:/app/src
+      - ./views:/app/views

@@ -1,0 +1,53 @@
+<%- include('partials/header') %>
+
+<div class="flex items-center justify-between mb-6">
+  <h1 class="text-2xl font-bold">Skills Vault</h1>
+  <a href="/dashboard/create" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
+    <i class="fa-solid fa-plus"></i> Upload Skill
+  </a>
+</div>
+
+<% if (skills.length === 0) { %>
+  <div class="text-center py-20 text-slate-500">
+    <i class="fa-solid fa-vault text-5xl mb-4 block"></i>
+    <p class="text-lg">No skills uploaded yet.</p>
+    <a href="/dashboard/create" class="text-indigo-400 hover:text-indigo-300 mt-2 inline-block">Upload your first skill &rarr;</a>
+  </div>
+<% } else { %>
+  <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-slate-800 text-slate-400 text-left">
+          <th class="px-5 py-3 font-medium">Name</th>
+          <th class="px-5 py-3 font-medium">Description</th>
+          <th class="px-5 py-3 font-medium">Triggers</th>
+          <th class="px-5 py-3 font-medium">Created</th>
+          <th class="px-5 py-3 font-medium text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-800">
+        <% skills.forEach(skill => { %>
+          <tr class="hover:bg-slate-800/50 transition-colors">
+            <td class="px-5 py-3 font-semibold text-gray-100"><%= skill.name %></td>
+            <td class="px-5 py-3 text-slate-400 max-w-xs truncate"><%= skill.description || '—' %></td>
+            <td class="px-5 py-3">
+              <% const triggers = typeof skill.triggers === 'string' ? JSON.parse(skill.triggers) : (skill.triggers || []); %>
+              <div class="flex flex-wrap gap-1">
+                <% triggers.forEach(t => { %>
+                  <span class="bg-indigo-500/20 text-indigo-300 text-xs px-2 py-0.5 rounded-full"><%= t %></span>
+                <% }) %>
+              </div>
+            </td>
+            <td class="px-5 py-3 text-slate-500 text-xs"><%= new Date(skill.created_at).toLocaleDateString() %></td>
+            <td class="px-5 py-3 text-right space-x-2">
+              <a href="/dashboard/skills/<%= skill.id %>" class="text-indigo-400 hover:text-indigo-300 text-xs font-medium">View</a>
+              <a href="/dashboard/skills/<%= skill.id %>/edit" class="text-slate-400 hover:text-slate-300 text-xs font-medium">Edit</a>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+<% } %>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,272 @@
+<%- include('partials/header') %>
+
+<div class="max-w-4xl">
+
+  <!-- Page header -->
+  <div class="mb-8">
+    <h1 class="text-2xl font-bold">Documentation</h1>
+    <p class="text-slate-400 mt-1">Everything you need to get started with BraiMD.</p>
+  </div>
+
+  <!-- Anchor navigation -->
+  <div class="flex flex-wrap gap-2 mb-8 sticky top-0 bg-slate-950 py-3 z-10 border-b border-slate-800">
+    <a href="#what-is-braimd" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors">What is BraiMD?</a>
+    <a href="#creating-a-skill" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors">Creating a Skill</a>
+    <a href="#agent-api" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors">Agent API Usage</a>
+    <a href="#skill-tree" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors">The Skill Tree</a>
+    <a href="#fabric" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors">Fabric Import</a>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- SECTION: What is BraiMD? -->
+  <!-- ============================================================ -->
+  <section id="what-is-braimd" class="mb-12 scroll-mt-20">
+    <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
+      <i class="fa-solid fa-brain text-indigo-400"></i> What is BraiMD?
+    </h2>
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 space-y-4">
+      <p class="text-slate-300 leading-relaxed">
+        BraiMD is a centralized vault for storing, organizing, and querying Markdown-based instructions ("skills") that power autonomous AI agents.
+        Instead of hardcoding massive prompts into every agent, you upload structured <code class="bg-slate-800 px-1.5 py-0.5 rounded text-indigo-300 text-sm">.md</code> files to BraiMD and agents retrieve exactly what they need via a REST API.
+      </p>
+      <div class="bg-slate-950 border border-slate-800 rounded-lg p-4 font-mono text-sm text-slate-400">
+        <pre class="whitespace-pre">
+  Developer                    BraiMD                      AI Agent
+  ─────────                    ──────                      ────────
+      │                           │                           │
+      │  Upload .md skill         │                           │
+      │ ─────────────────────────>│                           │
+      │                           │   GET /api/skills         │
+      │                           │       ?trigger=keyword    │
+      │                           │<──────────────────────────│
+      │                           │                           │
+      │                           │   { status, skill_name,   │
+      │                           │     content: "# ..." }    │
+      │                           │──────────────────────────>│
+      │                           │                           │
+      │                           │                    Agent executes
+      │                           │                    the instructions</pre>
+      </div>
+      <p class="text-slate-300 leading-relaxed">
+        Skills are organized in a visual <strong>Skill Tree</strong> where you define prerequisite relationships.
+        When an agent requests an advanced skill, BraiMD checks the tree and warns it if a prerequisite hasn't been completed.
+      </p>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SECTION: Creating a Skill -->
+  <!-- ============================================================ -->
+  <section id="creating-a-skill" class="mb-12 scroll-mt-20">
+    <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
+      <i class="fa-solid fa-file-circle-plus text-indigo-400"></i> Creating a Skill
+    </h2>
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 space-y-4">
+      <p class="text-slate-300 leading-relaxed">
+        Navigate to <a href="/dashboard/create" class="text-indigo-400 hover:text-indigo-300 font-medium">Add Skill</a>. The interface has four fields:
+      </p>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div class="bg-slate-800 rounded-lg p-4">
+          <h4 class="text-sm font-semibold text-indigo-300 mb-1">Skill Name</h4>
+          <p class="text-xs text-slate-400">The display title. Shows up in the dashboard and skill tree.</p>
+        </div>
+        <div class="bg-slate-800 rounded-lg p-4">
+          <h4 class="text-sm font-semibold text-indigo-300 mb-1">Description</h4>
+          <p class="text-xs text-slate-400">A short summary of what the skill teaches an agent to do.</p>
+        </div>
+        <div class="bg-slate-800 rounded-lg p-4">
+          <h4 class="text-sm font-semibold text-indigo-300 mb-1">Trigger Keywords</h4>
+          <p class="text-xs text-slate-400">Tags that agents search by. Type a keyword and press Enter to add. Example: <code class="text-emerald-400">database_setup</code>, <code class="text-emerald-400">mysql</code></p>
+        </div>
+        <div class="bg-slate-800 rounded-lg p-4">
+          <h4 class="text-sm font-semibold text-indigo-300 mb-1">Content (Markdown)</h4>
+          <p class="text-xs text-slate-400">The actual step-by-step instructions in Markdown. Use the rich editor or write raw Markdown.</p>
+        </div>
+      </div>
+      <div class="border-t border-slate-800 pt-4">
+        <h4 class="text-sm font-semibold text-slate-200 mb-2">Templates</h4>
+        <p class="text-slate-400 text-sm">
+          Don't want to start from scratch? Click a template button above the editor to inject a pre-built skeleton.
+          Templates pre-fill the editor with a structured Markdown outline and add relevant trigger tags automatically.
+        </p>
+      </div>
+      <div class="border-t border-slate-800 pt-4">
+        <h4 class="text-sm font-semibold text-slate-200 mb-2">Under the Hood: YAML Frontmatter</h4>
+        <p class="text-slate-400 text-sm mb-2">
+          When you click "Upload Skill," BraiMD automatically wraps your metadata into YAML frontmatter and prepends it to your Markdown.
+          Power users can also POST raw <code class="bg-slate-800 px-1 py-0.5 rounded text-indigo-300">.md</code> files directly via the API:
+        </p>
+        <pre class="bg-slate-950 border border-slate-800 rounded-lg p-4 text-sm text-slate-300 font-mono overflow-x-auto">---
+name: "MySQL Database Setup"
+description: "SOP for deploying a local MySQL instance."
+triggers: ["database_setup", "mysql", "init_db"]
+---
+
+# MySQL Initialization Protocol
+
+## 1. Authentication
+Always connect with the correct user privileges...
+</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SECTION: Agent API Usage -->
+  <!-- ============================================================ -->
+  <section id="agent-api" class="mb-12 scroll-mt-20">
+    <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
+      <i class="fa-solid fa-robot text-indigo-400"></i> Agent API Usage
+    </h2>
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 space-y-5">
+      <p class="text-slate-300 leading-relaxed">
+        AI agents query BraiMD using a single REST endpoint. The agent sends a trigger keyword and receives the matching skill's raw Markdown instructions.
+        All <code class="bg-slate-800 px-1.5 py-0.5 rounded text-indigo-300 text-sm">/api/skills</code> routes require an API key via the
+        <code class="bg-slate-800 px-1.5 py-0.5 rounded text-indigo-300 text-sm">x-api-key</code> header.
+      </p>
+
+      <!-- Authentication -->
+      <div>
+        <h4 class="text-sm font-semibold text-slate-200 mb-2">Authentication</h4>
+        <p class="text-slate-400 text-sm mb-2">
+          Include your API key in the <code class="bg-slate-800 px-1 py-0.5 rounded text-indigo-300">x-api-key</code> request header.
+          The server validates the key against a SHA-256 hash stored in the <code class="bg-slate-800 px-1 py-0.5 rounded text-indigo-300">.env</code> file.
+          If <code class="bg-slate-800 px-1 py-0.5 rounded text-indigo-300">API_KEY_HASH</code> is unset, auth is disabled (dev mode).
+        </p>
+      </div>
+
+      <!-- Endpoint -->
+      <div>
+        <h4 class="text-sm font-semibold text-slate-200 mb-2">Endpoint</h4>
+        <div class="bg-slate-950 border border-slate-800 rounded-lg p-3 font-mono text-sm flex items-center gap-3">
+          <span class="bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded text-xs font-bold">GET</span>
+          <span class="text-slate-300">/api/skills?trigger=<span class="text-indigo-300">database_setup</span></span>
+        </div>
+      </div>
+
+      <!-- Success response -->
+      <div>
+        <h4 class="text-sm font-semibold text-emerald-400 mb-2">Success Response</h4>
+        <pre class="bg-slate-950 border border-slate-800 rounded-lg p-4 text-sm text-slate-300 font-mono overflow-x-auto">{
+  "status": "ok",
+  "skill_name": "MySQL Database Setup",
+  "content": "# MySQL Initialization Protocol\n\n## 1. Authentication\n..."
+}</pre>
+      </div>
+
+      <!-- Prerequisite blocked -->
+      <div>
+        <h4 class="text-sm font-semibold text-amber-400 mb-2">Prerequisite Blocked Response</h4>
+        <pre class="bg-slate-950 border border-slate-800 rounded-lg p-4 text-sm text-slate-300 font-mono overflow-x-auto">{
+  "status": "prerequisite_required",
+  "skill_name": "Deploy Node App",
+  "prerequisite": {
+    "skill_name": "Docker Basics",
+    "content": "# Docker Fundamentals\n..."
+  },
+  "message": "You must complete \"Docker Basics\" before \"Deploy Node App\"."
+}</pre>
+      </div>
+
+      <!-- Not found -->
+      <div>
+        <h4 class="text-sm font-semibold text-rose-400 mb-2">Not Found Response</h4>
+        <pre class="bg-slate-950 border border-slate-800 rounded-lg p-4 text-sm text-slate-300 font-mono overflow-x-auto">{
+  "status": "not_found",
+  "message": "No skill matches that trigger."
+}</pre>
+      </div>
+
+      <!-- cURL example -->
+      <div class="border-t border-slate-800 pt-4">
+        <h4 class="text-sm font-semibold text-slate-200 mb-2">Example cURL</h4>
+        <pre class="bg-slate-950 border border-slate-800 rounded-lg p-4 text-sm text-emerald-300 font-mono overflow-x-auto">curl -s -H "x-api-key: YOUR_KEY" "http://localhost:3000/api/skills?trigger=database_setup" | jq .</pre>
+      </div>
+
+      <!-- Activity logging -->
+      <div class="border-t border-slate-800 pt-4">
+        <h4 class="text-sm font-semibold text-slate-200 mb-2">Activity Logging</h4>
+        <p class="text-slate-400 text-sm">
+          Every trigger query is automatically logged to the <code class="bg-slate-800 px-1 py-0.5 rounded text-indigo-300">agent_logs</code> table with an outcome
+          (<span class="text-emerald-400">success</span> or <span class="text-amber-400">prerequisite_blocked</span>),
+          along with the <code class="bg-slate-800 px-1 py-0.5 rounded text-indigo-300">agent_id</code> (from the API key) and
+          <code class="bg-slate-800 px-1 py-0.5 rounded text-indigo-300">client_ip</code> of the requester.
+          View the history on the <a href="/dashboard/logs" class="text-indigo-400 hover:text-indigo-300">Agent Logs</a> page.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SECTION: The Skill Tree -->
+  <!-- ============================================================ -->
+  <section id="skill-tree" class="mb-12 scroll-mt-20">
+    <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
+      <i class="fa-solid fa-diagram-project text-indigo-400"></i> The Skill Tree
+    </h2>
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 space-y-4">
+      <p class="text-slate-300 leading-relaxed">
+        The <a href="/dashboard/tree" class="text-indigo-400 hover:text-indigo-300 font-medium">Skill Tree</a>
+        is a visual directed graph where nodes represent skills and edges represent prerequisite relationships.
+        An arrow from Skill A to Skill B means "A is a prerequisite for B."
+      </p>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div class="bg-slate-800 rounded-lg p-4">
+          <h4 class="text-sm font-semibold text-indigo-300 mb-1"><i class="fa-solid fa-plus mr-1"></i> Link Skills</h4>
+          <p class="text-xs text-slate-400">Click "Add Edge" in the toolbar, then drag from a prerequisite node to the dependent node.</p>
+        </div>
+        <div class="bg-slate-800 rounded-lg p-4">
+          <h4 class="text-sm font-semibold text-rose-300 mb-1"><i class="fa-solid fa-trash mr-1"></i> Remove Links</h4>
+          <p class="text-xs text-slate-400">Select an edge, then click "Delete Selected" in the toolbar to remove the prerequisite relationship.</p>
+        </div>
+        <div class="bg-slate-800 rounded-lg p-4">
+          <h4 class="text-sm font-semibold text-emerald-300 mb-1"><i class="fa-solid fa-arrow-pointer mr-1"></i> Navigate</h4>
+          <p class="text-xs text-slate-400">Double-click any node to jump to that skill's detail page. Scroll to zoom, drag to pan.</p>
+        </div>
+      </div>
+      <div class="border-t border-slate-800 pt-4">
+        <h4 class="text-sm font-semibold text-slate-200 mb-2">How Prerequisite Blocking Works</h4>
+        <p class="text-slate-400 text-sm">
+          When an agent queries for a skill, BraiMD checks the edges table for an immediate parent node.
+          If a prerequisite exists, the API returns a <code class="bg-slate-800 px-1 py-0.5 rounded text-amber-300">prerequisite_required</code>
+          response with the parent skill's content, telling the agent what it needs to learn first.
+          This is restricted to checking the immediate parent (one level up) for MVP simplicity.
+        </p>
+        <h4 class="text-sm font-semibold text-slate-200 mb-2 mt-4">Cycle Detection</h4>
+        <p class="text-slate-400 text-sm">
+          BraiMD prevents circular dependencies when linking skills. If adding an edge from Skill A to Skill B
+          would create a cycle (e.g., A&rarr;B&rarr;C&rarr;A), the server rejects the request with a
+          <code class="bg-slate-800 px-1 py-0.5 rounded text-rose-300">409 Conflict</code> error.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SECTION: Fabric Import -->
+  <!-- ============================================================ -->
+  <section id="fabric" class="mb-12 scroll-mt-20">
+    <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
+      <i class="fa-solid fa-download text-indigo-400"></i> Fabric Import
+    </h2>
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 space-y-4">
+      <p class="text-slate-300 leading-relaxed">
+        <a href="https://github.com/danielmiessler/fabric" class="text-indigo-400 hover:text-indigo-300 font-medium" target="_blank">Fabric</a>
+        by Daniel Miessler is an open-source library of hundreds of crowdsourced AI prompt patterns.
+        Each pattern is a Markdown file designed to solve a specific task. BraiMD includes a CLI script to import curated Fabric patterns directly into your vault.
+      </p>
+      <div>
+        <h4 class="text-sm font-semibold text-slate-200 mb-2">Usage</h4>
+        <pre class="bg-slate-950 border border-slate-800 rounded-lg p-4 text-sm text-emerald-300 font-mono overflow-x-auto"># Import curated Fabric patterns into BraiMD
+node scripts/import_fabric.js</pre>
+        <p class="text-slate-400 text-sm mt-2">
+          The script fetches a curated set of popular patterns from GitHub, auto-generates YAML frontmatter, and POSTs each skill to your local BraiMD API.
+          Imported skills appear instantly on the dashboard and are queryable via the agent endpoint.
+        </p>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<%- include('partials/footer') %>

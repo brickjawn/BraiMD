@@ -1,0 +1,28 @@
+  </main>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="fixed bottom-6 right-6 z-50 space-y-2"></div>
+
+  <script>
+    /**
+     * Show a dismissable toast notification.
+     * @param {string} message - The message to display.
+     * @param {'success'|'error'|'warning'} type - Toast style.
+     */
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      const colors = { success: 'bg-emerald-600', error: 'bg-rose-600', warning: 'bg-amber-600' };
+      const icons = { success: 'fa-check-circle', error: 'fa-times-circle', warning: 'fa-exclamation-triangle' };
+      toast.className = `${colors[type] || colors.success} text-white px-5 py-3 rounded-lg shadow-lg flex items-center gap-3 text-sm transform translate-x-full transition-transform duration-300`;
+      toast.innerHTML = `<i class="fa-solid ${icons[type] || icons.success}"></i><span>${message}</span>`;
+      container.appendChild(toast);
+      requestAnimationFrame(() => toast.classList.remove('translate-x-full'));
+      setTimeout(() => {
+        toast.classList.add('translate-x-full');
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+  </script>
+</body>
+</html>
