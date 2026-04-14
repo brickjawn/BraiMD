@@ -47,7 +47,7 @@ test('returns found and logs headers to agent_logs', async () => {
     clientIp: '127.0.0.1',
   });
 
-  assert.equal(result.body.status, 'found');
+  assert.equal(result.body.status, 'success');
   const logCall = calls.find((call) => call.sql.includes('INSERT INTO agent_logs'));
   assert.ok(logCall);
   assert.deepEqual(logCall.params, [
@@ -57,7 +57,7 @@ test('returns found and logs headers to agent_logs', async () => {
     'OpenClaw',
     '127.0.0.1',
     'attack',
-    'found',
+    'success',
   ]);
 });
 
@@ -90,7 +90,7 @@ test('returns intercept when prerequisite exists', async () => {
   });
 
   assert.equal(result.body.status, 'intercept');
-  assert.equal(result.body.prerequisite.skill_name, 'Combat Basics');
+  assert.equal(result.body.data.intercepted_by.name, 'Combat Basics');
 });
 
 test('returns not_found when no skill matches trigger', async () => {
