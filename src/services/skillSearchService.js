@@ -145,13 +145,16 @@ async function resolveSkillSearch(context) {
       httpStatus: 200,
       body: {
         status: 'intercept',
-        skill_name: topSkill.name,
-        prerequisite: {
-          skill_id: firstPrerequisite.id,
-          skill_name: firstPrerequisite.name,
-          content: firstPrerequisite.content,
+        data: {
+          requested_trigger: trigger,
+          intercepted_by: {
+            skill_id: firstPrerequisite.id,
+            name: firstPrerequisite.name,
+            content: firstPrerequisite.content,
+            reason: `You must complete "${firstPrerequisite.name}" before "${topSkill.name}".`,
+          },
+          prerequisites_cleared: false,
         },
-        message: `You must complete "${firstPrerequisite.name}" before "${topSkill.name}".`,
       },
     };
   }
@@ -163,16 +166,19 @@ async function resolveSkillSearch(context) {
     platform: context.platform,
     clientIp: context.clientIp,
     query: trigger,
-    outcome: 'found',
+    outcome: 'success',
   });
 
   return {
     httpStatus: 200,
     body: {
-      status: 'found',
-      skill_id: topSkill.id,
-      skill_name: topSkill.name,
-      content: topSkill.content,
+      status: 'success',
+      data: {
+        skill_id: topSkill.id,
+        name: topSkill.name,
+        content: topSkill.content,
+        prerequisites_cleared: true,
+      },
     },
   };
 }
