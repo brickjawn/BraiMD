@@ -34,7 +34,7 @@ curl http://localhost:3000/health
 # Expected: {"status":"ok"}
 ```
 
-On first boot, MySQL initializes the `braimd` database from `src/db/schema.sql` (mounted at `/docker-entrypoint-initdb.d/`). This creates all five tables and seeds the default user (`user_id = 1`).
+On first boot, MySQL initializes the `braimd` database from the `migrations/` directory (mounted at `/docker-entrypoint-initdb.d/`). Files run in alphabetical order — the `NNN_*.sql` prefix enforces the apply sequence. `001_initial.sql` creates all five tables, seeds the default user (`user_id = 1`), and records itself in `schema_migrations`. See [migrations/README.md](../migrations/README.md) for the full convention.
 
 ### Restarting After Code Changes
 
