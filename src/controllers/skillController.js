@@ -62,13 +62,16 @@ exports.getById = async (req, res) => {
   }
 };
 
-// POST /api/skills — accepts { user_id, markdown }
+// POST /api/skills — accepts { user_id?, markdown }
 exports.create = async (req, res) => {
   try {
     const { user_id, markdown } = req.body;
 
-    if (!isPositiveInt(user_id)) {
-      return res.status(400).json({ error: 'Valid user_id is required' });
+    // Phase 1 scaffold: allow omitted/null user_id and default to seed user.
+    // Phase 2 session auth will replace this with req.session.user.id.
+    const effectiveUserId = user_id == null ? 1 : Number(user_id);
+    if (!isPositiveInt(effectiveUserId)) {
+      return res.status(400).json({ error: 'Valid user_id is required when provided' });
     }
     if (!markdown || typeof markdown !== 'string') {
       return res.status(400).json({ error: 'markdown string is required' });
@@ -82,13 +85,13 @@ exports.create = async (req, res) => {
 
     const [result] = await pool.query(
       'INSERT INTO skills (user_id, name, description, content, triggers) VALUES (?, ?, ?, ?, ?)',
-      [user_id, name, description, content, JSON.stringify(triggers)]
+      [effectiveUserId, name, description, content, JSON.stringify(triggers)]
     );
 
     // Auto-create a node for the skill tree (1-to-1 with skill)
     await pool.query(
       'INSERT INTO nodes (user_id, skill_id, x_coordinate, y_coordinate) VALUES (?, ?, 0.0, 0.0)',
-      [user_id, result.insertId]
+      [effectiveUserId, result.insertId]
     );
 
     res.status(201).json({ id: result.insertId, name, triggers });
