@@ -7,33 +7,39 @@
 
 ## Actors
 
-| Actor | Type | Interface | Description |
-|-------|------|-----------|-------------|
-| **Developer** | Human | EJS web dashboard (`/dashboard`) | Authors, organizes, and manages skills through the browser UI. Views the skill tree and agent logs. |
-| **AI Agent** | Machine | REST API (`/api/skills`) | Queries the vault by trigger keyword at runtime to retrieve skill instructions. Authenticates via `x-api-key` header. |
+
+| Actor         | Type    | Interface                        | Description                                                                                                           |
+| ------------- | ------- | -------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| **Developer** | Human   | EJS web dashboard (`/dashboard`) | Authors, organizes, and manages skills through the browser UI. Views the skill tree and agent logs.                   |
+| **AI Agent**  | Machine | REST API (`/api/skills`)         | Queries the vault by trigger keyword at runtime to retrieve skill instructions. Authenticates via `x-api-key` header. |
+
 
 ---
 
 ## Use Case Summary
 
-| ID | Name | Actor(s) | Requirements |
-|----|------|----------|-------------|
-| UC-1 | Manage Skills (CRUD) | Developer | FR2, FR3, FR8 |
-| UC-2 | Link Prerequisites (Edges) | Developer | FR4 |
-| UC-3 | Query Skill by Trigger | AI Agent | FR5, FR6 |
-| UC-4 | View Skill Tree | Developer | FR4 |
-| UC-5 | View Agent Logs | Developer | FR6 |
-| UC-6 | Bulk Import Fabric Patterns | Developer (CLI) | FR7 |
+
+| ID   | Name                        | Actor(s)        | Requirements  |
+| ---- | --------------------------- | --------------- | ------------- |
+| UC-1 | Manage Skills (CRUD)        | Developer       | FR2, FR3, FR8 |
+| UC-2 | Link Prerequisites (Edges)  | Developer       | FR4           |
+| UC-3 | Query Skill by Trigger      | AI Agent        | FR5, FR6      |
+| UC-4 | View Skill Tree             | Developer       | FR4           |
+| UC-5 | View Agent Logs             | Developer       | FR6           |
+| UC-6 | Bulk Import Fabric Patterns | Developer (CLI) | FR7           |
+
 
 ---
 
 ## UC-1: Manage Skills (CRUD)
 
-| Field | Value |
-|-------|-------|
-| **Actor(s)** | Developer |
+
+| Field             | Value                                                         |
+| ----------------- | ------------------------------------------------------------- |
+| **Actor(s)**      | Developer                                                     |
 | **Preconditions** | BraiMD server is running; default user exists (`user_id = 1`) |
-| **Trigger** | Developer navigates to the dashboard or create page |
+| **Trigger**       | Developer navigates to the dashboard or create page           |
+
 
 **Main Flow — Create:**
 
@@ -81,11 +87,13 @@
 
 ## UC-2: Link Prerequisites (Edges)
 
-| Field | Value |
-|-------|-------|
-| **Actor(s)** | Developer |
-| **Preconditions** | At least two skills exist in the vault |
-| **Trigger** | Developer navigates to the skill tree page |
+
+| Field             | Value                                      |
+| ----------------- | ------------------------------------------ |
+| **Actor(s)**      | Developer                                  |
+| **Preconditions** | At least two skills exist in the vault     |
+| **Trigger**       | Developer navigates to the skill tree page |
+
 
 **Main Flow — Create Edge:**
 
@@ -121,11 +129,13 @@
 
 ## UC-3: Query Skill by Trigger
 
-| Field | Value |
-|-------|-------|
-| **Actor(s)** | AI Agent |
+
+| Field             | Value                                                                                                        |
+| ----------------- | ------------------------------------------------------------------------------------------------------------ |
+| **Actor(s)**      | AI Agent                                                                                                     |
 | **Preconditions** | API key is valid (or dev mode if `API_KEY_HASH` is unset); at least one skill with a matching trigger exists |
-| **Trigger** | Agent sends `GET /api/skills?trigger=keyword` |
+| **Trigger**       | Agent sends `GET /api/skills?trigger=keyword`                                                                |
+
 
 **Main Flow — Success:**
 
@@ -135,13 +145,13 @@
 4. System finds a matching skill with no inbound edges (no prerequisites).
 5. System inserts an `agent_logs` row with `outcome = "success"`, `agent_id` (from API key identity), and `client_ip` (FR6).
 6. System returns JSON:
-   ```json
+  ```json
    {
      "status": "ok",
      "skill_name": "Database Setup Guide",
      "content": "## Step 1: Install MySQL..."
    }
-   ```
+  ```
 
 **Alternate Flow — Prerequisite Blocked:**
 
@@ -150,7 +160,7 @@
 3. System queries the parent node via `edges → nodes → skills` join to retrieve the prerequisite skill.
 4. System logs `outcome = "prerequisite_blocked"` (FR6).
 5. System returns JSON:
-   ```json
+  ```json
    {
      "status": "prerequisite_required",
      "skill_name": "Advanced MySQL Tuning",
@@ -160,7 +170,7 @@
      },
      "message": "You must complete \"Database Setup Guide\" before \"Advanced MySQL Tuning\"."
    }
-   ```
+  ```
 
 **Alternate Flow — Not Found:**
 
@@ -180,11 +190,13 @@
 
 ## UC-4: View Skill Tree
 
-| Field | Value |
-|-------|-------|
-| **Actor(s)** | Developer |
-| **Preconditions** | Server is running |
-| **Trigger** | Developer navigates to `/dashboard/tree` |
+
+| Field             | Value                                    |
+| ----------------- | ---------------------------------------- |
+| **Actor(s)**      | Developer                                |
+| **Preconditions** | Server is running                        |
+| **Trigger**       | Developer navigates to `/dashboard/tree` |
+
 
 **Main Flow:**
 
@@ -206,11 +218,13 @@
 
 ## UC-5: View Agent Logs
 
-| Field | Value |
-|-------|-------|
-| **Actor(s)** | Developer |
+
+| Field             | Value                                      |
+| ----------------- | ------------------------------------------ |
+| **Actor(s)**      | Developer                                  |
 | **Preconditions** | At least one agent query has been recorded |
-| **Trigger** | Developer navigates to `/dashboard/logs` |
+| **Trigger**       | Developer navigates to `/dashboard/logs`   |
+
 
 **Main Flow:**
 
@@ -229,11 +243,13 @@
 
 ## UC-6: Bulk Import Fabric Patterns
 
-| Field | Value |
-|-------|-------|
-| **Actor(s)** | Developer (CLI) |
+
+| Field             | Value                                                             |
+| ----------------- | ----------------------------------------------------------------- |
+| **Actor(s)**      | Developer (CLI)                                                   |
 | **Preconditions** | BraiMD server is running and reachable; internet access to GitHub |
-| **Trigger** | Developer runs `node scripts/import_fabric.js` |
+| **Trigger**       | Developer runs `node scripts/import_fabric.js`                    |
+
 
 **Main Flow:**
 
@@ -276,3 +292,4 @@
                     │                                         │
                     └─────────────────────────────────────────┘
 ```
+
