@@ -79,3 +79,8 @@ Migration `001_initial.sql` replaces:
   `ALTER TABLE` whose columns are now part of the 001 baseline
 
 Removed together so fresh installs don't have two competing starting points.
+
+Migration `002_nullable_user_fk.sql` follows by relaxing `skills.user_id` from
+`NOT NULL` to `NULL DEFAULT 1` as prototype scaffolding for decision 4.
+This preserves current behavior (seed user `id=1`) while removing a hard
+schema blocker ahead of Phase 2 auth/session work.
