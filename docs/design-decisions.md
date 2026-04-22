@@ -207,3 +207,4 @@ None of these are required for the prototype. All of them become relevant at pro
 - **Reversing a decision:** add a new section titled "Revision to Decision N" with the new choice and rationale. Leave the original in place as history.
 - **Prototype-scoped decisions:** mark with `[PROTOTYPE]` tag so the post-semester review knows which items to revisit.
 - **Rationale discipline:** every decision captures both the choice AND the alternative that was rejected. "Why this" is worth as much as "what this."
+
