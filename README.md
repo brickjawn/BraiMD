@@ -42,24 +42,42 @@ No build step. No frontend framework. No TypeScript.
 
 ## Quick Start
 
+Scripted one-command laptop workflow (Podman preferred, Docker supported):
+
 ```sh
-# Clone and enter the project
 git clone <repo-url> && cd BraiMD
 
-# Create your environment file
+scripts/bootstrap-env.sh          # generate .env + API key
+scripts/up.sh                     # pull/build + start full stack
+scripts/smoke.sh                  # verify /health, /dashboard, API auth
+scripts/run-tests.sh              # run the Node test suite
+```
+
+Open the dashboard:
+
+```sh
+xdg-open http://localhost:3000    # Linux
+```
+
+### Manual start (equivalent to the scripts above)
+
+```sh
 cp .env.example .env
 # Edit .env — set DB_PASSWORD, DB_ROOT_PASSWORD, and API_KEY_HASH
-
-# Start the stack (MySQL + Node app)
 podman-compose up -d
-
-# Verify
 curl http://localhost:3000/health
 # {"status":"ok"}
-
-# Open the dashboard (Linux)
-xdg-open http://localhost:3000
 ```
+
+### Runtime modes
+
+`scripts/up.sh` supports three modes — pick the one that matches your laptop:
+
+| Flag | What it runs | When to use |
+|------|--------------|-------------|
+| _(default)_ | App **and** DB in containers (`docker-compose.yml`) | Normal laptop bring-up |
+| `--rootless-fallback` | App-only container (`docker-compose.rootless-fallback.yml`) | Rootless host where bridge networking is blocked; use existing local MariaDB/MySQL |
+| `--hybrid` | DB in a container, Node app on the host | Container build is restricted (e.g. no `/dev/net/tun` inside the sandbox) |
 
 ### Rootless Podman Notes (Linux)
 
@@ -69,6 +87,9 @@ If your host cannot create rootless bridge networks (`netavark ... create bridge
 - App-only fallback (uses your existing local MariaDB): `podman-compose -f docker-compose.rootless-fallback.yml up -d`
 
 ### Generating an API Key
+
+`scripts/bootstrap-env.sh` does this automatically and stores the **raw** key in
+`.env.apikey` (chmod 600, gitignored). To regenerate manually:
 
 ```sh
 # Generate a random key
