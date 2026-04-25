@@ -15,8 +15,9 @@ BraiMD is a centralized repository where developers author skills as Markdown fi
 
 - **Skill CRUD** — Create, read, update, and delete skills via web dashboard or REST API
 - **YAML Frontmatter Parsing** — Automatic extraction of name, description, and triggers from Markdown headers
+- **Skill Versioning** — Updates create append-only `skill_versions` rows and advance `skills.active_version_id`
 - **Prerequisite Tree** — Interactive vis-network graph with drag-to-connect edge creation and cycle detection
-- **Agent API** — `GET /api/skills?trigger=keyword` returns structured JSON with prerequisite enforcement
+- **Agent API** — `GET /api/skills/search?trigger=keyword` returns structured JSON with prerequisite enforcement (`/api/skills?trigger=` is also supported)
 - **Activity Logging** — Every agent query is logged with outcome, agent identity, and source IP
 - **Fabric Import** — Bulk import 10 curated AI patterns from the Fabric repository via CLI script
 - **Skill Templates** — Pre-built templates (Blank, Agent SOP, Code Analysis) for consistent authoring
@@ -125,6 +126,7 @@ echo -n "a1b2c3d4..." | sha256sum | awk '{print $1}'
 | Route | Method | Auth | Purpose |
 |-------|--------|------|---------|
 | `/api/skills` | GET | API Key | List skills or search by `?trigger=` |
+| `/api/skills/search` | GET | API Key | Search by `?trigger=` |
 | `/api/skills/:id` | GET | API Key | Get single skill |
 | `/api/skills` | POST | API Key | Create skill |
 | `/api/skills/:id` | PUT | API Key | Update skill |
@@ -138,15 +140,16 @@ echo -n "a1b2c3d4..." | sha256sum | awk '{print $1}'
 
 ## Database Schema
 
-Five normalized tables with `ON DELETE CASCADE` on all foreign keys:
+Six normalized tables with explicit `ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`. Schema changes live in numbered, append-only SQL files under `migrations/`.
 
 | Table | Purpose | Key Relationships |
 |-------|---------|-------------------|
 | `users` | Authentication (Phase 2) | — |
-| `skills` | Markdown content + YAML metadata | `user_id` → users |
+| `skills` | YAML metadata + active version pointer | `user_id` → users; `active_version_id` → skill_versions |
+| `skill_versions` | Append-only Markdown content history | `skill_id` → skills; `created_by_user_id` → users |
 | `nodes` | Graph canvas positions | `skill_id` → skills (1:1, UNIQUE) |
-| `edges` | Prerequisite links | `from_node_id`, `to_node_id` → nodes |
-| `agent_logs` | Agent query history | `skill_id` → skills |
+| `edges` | Prerequisite links | `source_node_id`, `target_node_id` → nodes |
+| `agent_logs` | Agent query history | `skill_id` → skills (`ON DELETE SET NULL`) |
 
 See [docs/erd.md](docs/erd.md) for the full ERD with column definitions and design decisions.
 
@@ -170,14 +173,15 @@ See [docs/erd.md](docs/erd.md) for the full ERD with column definitions and desi
 src/
   server.js              Express app entry point
   db/db.js               mysql2 connection pool
-  db/schema.sql          DDL + seed data
   controllers/           skillController, edgeController, viewController
   routes/                skillRoutes, edgeRoutes, viewRoutes
   middleware/            apiKeyAuth (SHA-256 timing-safe)
+  services/              skillSearchService, skillVersionService
 views/                   EJS templates (index, create, edit, view, tree, logs, help)
   partials/              Shared header/footer
 scripts/
   import_fabric.js       Bulk import Fabric AI patterns
+migrations/              Numbered SQL migrations (001_initial, 002, 003...)
 docs/                    Project deliverables
 docker-compose.yml       Podman Compose stack definition
 Dockerfile               Node 20 Alpine image

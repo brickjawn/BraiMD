@@ -84,3 +84,8 @@ Migration `002_nullable_user_fk.sql` follows by relaxing `skills.user_id` from
 `NOT NULL` to `NULL DEFAULT 1` as prototype scaffolding for decision 4.
 This preserves current behavior (seed user `id=1`) while removing a hard
 schema blocker ahead of Phase 2 auth/session work.
+
+Migration `003_skill_versions.sql` adds append-oriented `skill_versions`,
+backfills one published v1 row per existing skill, points
+`skills.active_version_id` at that row, and drops `skills.content` so active
+version content has exactly one source of truth.
