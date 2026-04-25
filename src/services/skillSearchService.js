@@ -12,10 +12,11 @@ function buildSearchContext(req) {
 
 async function findMatchingSkills(trigger) {
   const [rows] = await pool.query(
-    `SELECT id, name, description, content, triggers, created_at
-     FROM skills
-     WHERE JSON_CONTAINS(triggers, ?)
-     ORDER BY created_at DESC, id DESC`,
+    `SELECT s.id, s.name, s.description, v.content, s.triggers, s.created_at
+     FROM skills s
+     JOIN skill_versions v ON v.id = s.active_version_id
+     WHERE JSON_CONTAINS(s.triggers, ?)
+     ORDER BY s.created_at DESC, s.id DESC`,
     [JSON.stringify(trigger)]
   );
   return rows;
@@ -23,11 +24,12 @@ async function findMatchingSkills(trigger) {
 
 async function findImmediatePrerequisites(skillId) {
   const [rows] = await pool.query(
-    `SELECT s.id, s.name, s.content
+    `SELECT s.id, s.name, v.content
      FROM edges e
      JOIN nodes child_node ON child_node.id = e.target_node_id
      JOIN nodes parent_node ON parent_node.id = e.source_node_id
      JOIN skills s ON s.id = parent_node.skill_id
+     JOIN skill_versions v ON v.id = s.active_version_id
      WHERE child_node.skill_id = ?
      ORDER BY s.created_at DESC, s.id DESC`,
     [skillId]
