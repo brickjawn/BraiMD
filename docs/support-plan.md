@@ -34,7 +34,7 @@ curl http://localhost:3000/health
 # Expected: {"status":"ok"}
 ```
 
-On first boot, MySQL initializes the `braimd` database from the `migrations/` directory (mounted at `/docker-entrypoint-initdb.d/`). Files run in alphabetical order — the `NNN_*.sql` prefix enforces the apply sequence. `001_initial.sql` creates all five tables, seeds the default user (`user_id = 1`), and records itself in `schema_migrations`. See [migrations/README.md](../migrations/README.md) for the full convention.
+On first boot, MySQL initializes the `braimd` database from the `migrations/` directory (mounted at `/docker-entrypoint-initdb.d/`). Files run in alphabetical order — the `NNN_*.sql` prefix enforces the apply sequence. The baseline migration creates the core tables and seeds the default user (`user_id = 1`); later migrations add skill versioning and record themselves in `schema_migrations`. See [migrations/README.md](../migrations/README.md) for the full convention.
 
 ### Restarting After Code Changes
 
@@ -77,7 +77,7 @@ The MySQL container has its own health check defined in `docker-compose.yml` usi
 The `/dashboard/logs` page displays the 100 most recent agent queries with:
 
 - **Skill Name** — which skill was queried (linked to detail page)
-- **Outcome** — `success` (skill returned) or `prerequisite_blocked` (dependency wall)
+- **Outcome** — `success`, `intercept`, `not_found`, or `ambiguous`
 - **Agent ID** — which API key identity made the call
 - **Client IP** — source address (useful for distinguishing hosts on the same network)
 - **Timestamp** — when the query occurred
@@ -172,9 +172,9 @@ The Git repository is the source of truth for all application code, schema defin
 
 | Issue | Impact | Mitigation | Resolution |
 |-------|--------|------------|------------|
-| `user_id = 1` hardcoded | All skills belong to one user | Seed user in `schema.sql` ensures it exists on fresh setup | Phase 2: user auth with session-scoped user_id |
+| `user_id = 1` hardcoded | All skills belong to one user | Seed user in `migrations/001_initial.sql` ensures it exists on fresh setup | Phase 2: user auth with session-scoped user_id |
 | No HTTPS | Traffic unencrypted | Running on localhost only; Tailscale tunnel for remote access | Phase 3: Caddy reverse proxy with auto-TLS |
-| No automated tests | Regressions possible | Manual testing checklist (see Section 7) | Phase 4: test suite |
+| Test suite is focused, not exhaustive | Some dashboard regressions still require manual checks | `npm test` plus smoke script and manual checklist (see Section 7) | Phase 4: broader CI coverage |
 | Agent logs unbounded | Table grows indefinitely | Dashboard query limited to 100 rows; MySQL handles large tables well | Phase 2: log rotation or TTL-based cleanup |
 | Edge routes unauthenticated | Dashboard-only consumers | Same-origin fetch; no sensitive data exposed | Phase 2: session auth for dashboard routes |
 
@@ -223,8 +223,8 @@ Run through this checklist before any demo or submission to verify end-to-end fu
   ```sh
   curl -H "x-api-key: YOUR_KEY" "http://localhost:3000/api/skills?trigger=extract_wisdom"
   ```
-  Expect `{"status":"ok", "skill_name": "...", "content": "..."}`
-- [ ] Query a skill that has a prerequisite — expect `"prerequisite_required"` response
+  Expect `{"status":"success", "data": {"skill_id": ..., "name": "...", "content": "...", "prerequisites_cleared": true}}`
+- [ ] Query a skill that has a prerequisite — expect `"intercept"` response with `data.intercepted_by.content`
 - [ ] Query with a non-existent trigger — expect `"not_found"` response
 - [ ] Verify all queries appear in `/dashboard/logs` with correct outcome, agent_id, and client_ip
 
