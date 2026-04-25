@@ -48,6 +48,9 @@ test('returns found and logs headers to agent_logs', async () => {
   });
 
   assert.equal(result.body.status, 'success');
+  const searchCall = calls.find((call) => call.sql.includes('FROM skills'));
+  assert.ok(searchCall.sql.includes('JOIN skill_versions'));
+  assert.ok(searchCall.sql.includes('s.active_version_id'));
   const logCall = calls.find((call) => call.sql.includes('INSERT INTO agent_logs'));
   assert.ok(logCall);
   assert.deepEqual(logCall.params, [
@@ -62,7 +65,9 @@ test('returns found and logs headers to agent_logs', async () => {
 });
 
 test('returns intercept when prerequisite exists', async () => {
+  const calls = [];
   const { resolveSkillSearch } = loadServiceWithMock(async (sql) => {
+    calls.push({ sql });
     if (sql.includes('FROM skills')) {
       return [[{
         id: 9,
@@ -91,6 +96,9 @@ test('returns intercept when prerequisite exists', async () => {
 
   assert.equal(result.body.status, 'intercept');
   assert.equal(result.body.data.intercepted_by.name, 'Combat Basics');
+  const prerequisiteCall = calls.find((call) => call.sql.includes('FROM edges'));
+  assert.ok(prerequisiteCall.sql.includes('JOIN skill_versions'));
+  assert.ok(prerequisiteCall.sql.includes('s.active_version_id'));
 });
 
 test('returns not_found when no skill matches trigger', async () => {

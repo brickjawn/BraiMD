@@ -4,6 +4,11 @@ const {
   buildSearchContext,
   resolveSkillSearch,
 } = require('../services/skillSearchService');
+const {
+  createSkillWithInitialVersion,
+  updateSkillWithNewVersion,
+  findSkillWithActiveContentById,
+} = require('../services/skillVersionService');
 
 // Validate that a value is a positive integer
 function isPositiveInt(value) {
@@ -51,9 +56,7 @@ exports.getById = async (req, res) => {
       return res.status(400).json({ error: 'Invalid skill ID' });
     }
 
-    const [rows] = await pool.query('SELECT * FROM skills WHERE id = ?', [
-      req.params.id,
-    ]);
+    const rows = await findSkillWithActiveContentById(req.params.id);
     if (rows.length === 0) return res.status(404).json({ error: 'Skill not found' });
     res.json(rows[0]);
   } catch (err) {
@@ -62,13 +65,16 @@ exports.getById = async (req, res) => {
   }
 };
 
-// POST /api/skills — accepts { user_id, markdown }
+// POST /api/skills — accepts { user_id?, markdown }
 exports.create = async (req, res) => {
   try {
     const { user_id, markdown } = req.body;
 
-    if (!isPositiveInt(user_id)) {
-      return res.status(400).json({ error: 'Valid user_id is required' });
+    // Phase 1 scaffold: allow omitted/null user_id and default to seed user.
+    // Phase 2 session auth will replace this with req.session.user.id.
+    const effectiveUserId = user_id == null ? 1 : Number(user_id);
+    if (!isPositiveInt(effectiveUserId)) {
+      return res.status(400).json({ error: 'Valid user_id is required when provided' });
     }
     if (!markdown || typeof markdown !== 'string') {
       return res.status(400).json({ error: 'markdown string is required' });
@@ -80,18 +86,16 @@ exports.create = async (req, res) => {
     const description = frontmatter.description || null;
     const triggers = frontmatter.triggers || [];
 
-    const [result] = await pool.query(
-      'INSERT INTO skills (user_id, name, description, content, triggers) VALUES (?, ?, ?, ?, ?)',
-      [user_id, name, description, content, JSON.stringify(triggers)]
-    );
+    const created = await createSkillWithInitialVersion({
+      userId: effectiveUserId,
+      name,
+      description,
+      content,
+      triggers,
+      changelog: 'Created via API',
+    });
 
-    // Auto-create a node for the skill tree (1-to-1 with skill)
-    await pool.query(
-      'INSERT INTO nodes (user_id, skill_id, x_coordinate, y_coordinate) VALUES (?, ?, 0.0, 0.0)',
-      [user_id, result.insertId]
-    );
-
-    res.status(201).json({ id: result.insertId, name, triggers });
+    res.status(201).json({ id: created.id, name, triggers });
   } catch (err) {
     console.error('skillController.create error:', err);
     res.status(500).json({ error: 'Internal server error' });
@@ -116,12 +120,17 @@ exports.update = async (req, res) => {
     const description = frontmatter.description || null;
     const triggers = frontmatter.triggers || [];
 
-    const [result] = await pool.query(
-      'UPDATE skills SET name = ?, description = ?, content = ?, triggers = ? WHERE id = ?',
-      [name, description, content, JSON.stringify(triggers), req.params.id]
-    );
+    const updated = await updateSkillWithNewVersion({
+      skillId: Number(req.params.id),
+      name,
+      description,
+      content,
+      triggers,
+      createdByUserId: 1,
+      changelog: 'Updated via API',
+    });
 
-    if (result.affectedRows === 0) return res.status(404).json({ error: 'Skill not found' });
+    if (!updated.found) return res.status(404).json({ error: 'Skill not found' });
     res.json({ id: Number(req.params.id), name, triggers });
   } catch (err) {
     console.error('skillController.update error:', err);

@@ -1,6 +1,11 @@
 const pool = require('../db/db');
 const matter = require('gray-matter');
 const { marked } = require('marked');
+const {
+  createSkillWithInitialVersion,
+  findSkillWithActiveContentById,
+  updateSkillWithNewVersion,
+} = require('../services/skillVersionService');
 
 // GET /dashboard — list all skills
 exports.index = async (_req, res) => {
@@ -34,18 +39,17 @@ exports.createSkill = async (req, res) => {
     const description = frontmatter.description || null;
     const triggers = frontmatter.triggers || [];
 
-    const [result] = await pool.query(
-      'INSERT INTO skills (user_id, name, description, content, triggers) VALUES (?, ?, ?, ?, ?)',
-      [1, name, description, content, JSON.stringify(triggers)]
-    );
+    const skill = await createSkillWithInitialVersion({
+      userId: 1,
+      name,
+      description,
+      content,
+      triggers,
+      createdByUserId: 1,
+      changelog: 'Created via dashboard',
+    });
 
-    // Auto-create a node for the skill tree (1-to-1 with skill)
-    await pool.query(
-      'INSERT INTO nodes (user_id, skill_id, x_coordinate, y_coordinate) VALUES (?, ?, 0.0, 0.0)',
-      [1, result.insertId]
-    );
-
-    res.redirect(`/dashboard/skills/${result.insertId}`);
+    res.redirect(`/dashboard/skills/${skill.id}`);
   } catch (err) {
     console.error('viewController.createSkill error:', err);
     res.status(500).send('Internal server error');
@@ -55,13 +59,11 @@ exports.createSkill = async (req, res) => {
 // GET /dashboard/skills/:id — view skill with rendered markdown
 exports.viewSkill = async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT * FROM skills WHERE id = ?', [
-      req.params.id,
-    ]);
+    const rows = await findSkillWithActiveContentById(req.params.id);
     if (rows.length === 0) return res.status(404).send('Skill not found');
 
     const skill = rows[0];
-    const renderedHtml = marked.parse(skill.content);
+    const renderedHtml = marked.parse(skill.content || '');
 
     res.render('view', { title: skill.name, skill, renderedHtml });
   } catch (err) {
@@ -73,9 +75,7 @@ exports.viewSkill = async (req, res) => {
 // GET /dashboard/skills/:id/edit — render edit form
 exports.editForm = async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT * FROM skills WHERE id = ?', [
-      req.params.id,
-    ]);
+    const rows = await findSkillWithActiveContentById(req.params.id);
     if (rows.length === 0) return res.status(404).send('Skill not found');
 
     const skill = rows[0];
@@ -105,12 +105,17 @@ exports.updateSkill = async (req, res) => {
     const description = frontmatter.description || null;
     const triggers = frontmatter.triggers || [];
 
-    const [result] = await pool.query(
-      'UPDATE skills SET name = ?, description = ?, content = ?, triggers = ? WHERE id = ?',
-      [name, description, content, JSON.stringify(triggers), req.params.id]
-    );
+    const skill = await updateSkillWithNewVersion({
+      skillId: Number(req.params.id),
+      name,
+      description,
+      content,
+      triggers,
+      createdByUserId: 1,
+      changelog: 'Updated via dashboard',
+    });
 
-    if (result.affectedRows === 0) return res.status(404).send('Skill not found');
+    if (!skill.found) return res.status(404).send('Skill not found');
     res.redirect(`/dashboard/skills/${req.params.id}`);
   } catch (err) {
     console.error('viewController.updateSkill error:', err);

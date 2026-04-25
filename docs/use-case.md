@@ -7,33 +7,39 @@
 
 ## Actors
 
-| Actor | Type | Interface | Description |
-|-------|------|-----------|-------------|
-| **Developer** | Human | EJS web dashboard (`/dashboard`) | Authors, organizes, and manages skills through the browser UI. Views the skill tree and agent logs. |
-| **AI Agent** | Machine | REST API (`/api/skills`) | Queries the vault by trigger keyword at runtime to retrieve skill instructions. Authenticates via `x-api-key` header. |
+
+| Actor         | Type    | Interface                        | Description                                                                                                           |
+| ------------- | ------- | -------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| **Developer** | Human   | EJS web dashboard (`/dashboard`) | Authors, organizes, and manages skills through the browser UI. Views the skill tree and agent logs.                   |
+| **AI Agent**  | Machine | REST API (`/api/skills`)         | Queries the vault by trigger keyword at runtime to retrieve skill instructions. Authenticates via `x-api-key` header. |
+
 
 ---
 
 ## Use Case Summary
 
-| ID | Name | Actor(s) | Requirements |
-|----|------|----------|-------------|
-| UC-1 | Manage Skills (CRUD) | Developer | FR2, FR3, FR8 |
-| UC-2 | Link Prerequisites (Edges) | Developer | FR4 |
-| UC-3 | Query Skill by Trigger | AI Agent | FR5, FR6 |
-| UC-4 | View Skill Tree | Developer | FR4 |
-| UC-5 | View Agent Logs | Developer | FR6 |
-| UC-6 | Bulk Import Fabric Patterns | Developer (CLI) | FR7 |
+
+| ID   | Name                        | Actor(s)        | Requirements  |
+| ---- | --------------------------- | --------------- | ------------- |
+| UC-1 | Manage Skills (CRUD)        | Developer       | FR2, FR3, FR8 |
+| UC-2 | Link Prerequisites (Edges)  | Developer       | FR4           |
+| UC-3 | Query Skill by Trigger      | AI Agent        | FR5, FR6      |
+| UC-4 | View Skill Tree             | Developer       | FR4           |
+| UC-5 | View Agent Logs             | Developer       | FR6           |
+| UC-6 | Bulk Import Fabric Patterns | Developer (CLI) | FR7           |
+
 
 ---
 
 ## UC-1: Manage Skills (CRUD)
 
-| Field | Value |
-|-------|-------|
-| **Actor(s)** | Developer |
+
+| Field             | Value                                                         |
+| ----------------- | ------------------------------------------------------------- |
+| **Actor(s)**      | Developer                                                     |
 | **Preconditions** | BraiMD server is running; default user exists (`user_id = 1`) |
-| **Trigger** | Developer navigates to the dashboard or create page |
+| **Trigger**       | Developer navigates to the dashboard or create page           |
+
 
 **Main Flow — Create:**
 
@@ -43,8 +49,8 @@
 4. Developer fills in the skill name, description, trigger tags, and Markdown content.
 5. Developer clicks "Upload Skill."
 6. System assembles YAML frontmatter from the form fields and concatenates it with the Markdown body.
-7. System parses the combined string using `gray-matter` to extract `name`, `description`, and `triggers` into dedicated database columns, and stores the raw Markdown body in `content` (FR3).
-8. System inserts the skill row into the `skills` table and auto-creates a corresponding node in the `nodes` table for the skill tree.
+7. System parses the combined string using `gray-matter` to extract `name`, `description`, and `triggers` into dedicated database columns (FR3).
+8. System runs a single transaction that inserts skill metadata into `skills`, inserts Markdown content as version 1 in `skill_versions`, updates `skills.active_version_id`, and auto-creates a `nodes` row for the skill tree.
 9. System redirects to the skill's detail view (`/dashboard/skills/:id`).
 
 **Main Flow — Read:**
@@ -59,7 +65,8 @@
 1. Developer clicks "Edit" on a skill's detail page.
 2. System loads the skill into the edit form, pre-populating all fields and the EasyMDE editor.
 3. Developer modifies any fields and clicks "Save Changes."
-4. System re-parses the YAML frontmatter, updates the skill row, and redirects to the detail view.
+4. System re-parses the YAML frontmatter, updates skill metadata, inserts a new `published` row in `skill_versions`, advances `skills.active_version_id`, and redirects to the detail view.
+5. Prior versions remain in `skill_versions`; the update path never destroys older Markdown content.
 
 **Main Flow — Delete:**
 
@@ -75,17 +82,19 @@
 - **AF-2 (Missing content):** If the Markdown body is empty or not a string, system returns HTTP 400.
 - **AF-3 (Skill not found):** If a skill ID does not exist on read/update/delete, system returns HTTP 404.
 
-**Postconditions:** The `skills`, `nodes`, `edges`, and `agent_logs` tables reflect the change. On delete, all dependent rows are cascade-removed.
+**Postconditions:** The `skills`, `skill_versions`, `nodes`, `edges`, and `agent_logs` tables reflect the change. On create/update, active content lives in `skill_versions`; on delete, dependent rows are cascade-removed.
 
 ---
 
 ## UC-2: Link Prerequisites (Edges)
 
-| Field | Value |
-|-------|-------|
-| **Actor(s)** | Developer |
-| **Preconditions** | At least two skills exist in the vault |
-| **Trigger** | Developer navigates to the skill tree page |
+
+| Field             | Value                                      |
+| ----------------- | ------------------------------------------ |
+| **Actor(s)**      | Developer                                  |
+| **Preconditions** | At least two skills exist in the vault     |
+| **Trigger**       | Developer navigates to the skill tree page |
+
 
 **Main Flow — Create Edge:**
 
@@ -121,70 +130,98 @@
 
 ## UC-3: Query Skill by Trigger
 
-| Field | Value |
-|-------|-------|
-| **Actor(s)** | AI Agent |
+
+| Field             | Value                                                                                                        |
+| ----------------- | ------------------------------------------------------------------------------------------------------------ |
+| **Actor(s)**      | AI Agent                                                                                                     |
 | **Preconditions** | API key is valid (or dev mode if `API_KEY_HASH` is unset); at least one skill with a matching trigger exists |
-| **Trigger** | Agent sends `GET /api/skills?trigger=keyword` |
+| **Trigger**       | Agent sends `GET /api/skills/search?trigger=keyword` (alias: `GET /api/skills?trigger=keyword`)               |
+
 
 **Main Flow — Success:**
 
-1. AI Agent sends `GET /api/skills?trigger=database_setup` with the `x-api-key` header.
+1. AI Agent sends `GET /api/skills/search?trigger=database_setup` with the `x-api-key` header.
 2. API key middleware hashes the provided key with SHA-256 and performs a timing-safe comparison against `API_KEY_HASH` (NFR4).
-3. Skill controller queries `SELECT ... FROM skills WHERE JSON_CONTAINS(triggers, ?)` using the trigger keyword.
+3. Search service queries `skills` joined to `skill_versions` on `skills.active_version_id`, filtering with `JSON_CONTAINS(triggers, ?)`.
 4. System finds a matching skill with no inbound edges (no prerequisites).
-5. System inserts an `agent_logs` row with `outcome = "success"`, `agent_id` (from API key identity), and `client_ip` (FR6).
+5. System inserts an `agent_logs` row with `outcome = "success"`, `agent_id`, `session_id`, `platform`, and `client_ip` (FR6).
 6. System returns JSON:
-   ```json
+  ```json
    {
-     "status": "ok",
-     "skill_name": "Database Setup Guide",
-     "content": "## Step 1: Install MySQL..."
+     "status": "success",
+     "data": {
+       "skill_id": 7,
+       "name": "Database Setup Guide",
+       "content": "## Step 1: Install MySQL...",
+       "prerequisites_cleared": true
+     }
    }
-   ```
+  ```
 
 **Alternate Flow — Prerequisite Blocked:**
 
 1. Steps 1–3 same as above.
 2. System finds a matching skill but it has an inbound edge (a prerequisite exists).
-3. System queries the parent node via `edges → nodes → skills` join to retrieve the prerequisite skill.
-4. System logs `outcome = "prerequisite_blocked"` (FR6).
+3. System queries the parent node via `edges → nodes → skills → skill_versions` joins to retrieve the prerequisite skill's active content.
+4. System logs `outcome = "intercept"` (FR6).
 5. System returns JSON:
-   ```json
+  ```json
    {
-     "status": "prerequisite_required",
-     "skill_name": "Advanced MySQL Tuning",
-     "prerequisite": {
-       "skill_name": "Database Setup Guide",
-       "content": "## Step 1: Install MySQL..."
-     },
-     "message": "You must complete \"Database Setup Guide\" before \"Advanced MySQL Tuning\"."
+     "status": "intercept",
+     "data": {
+       "requested_trigger": "mysql_tuning",
+       "intercepted_by": {
+         "skill_id": 7,
+         "name": "Database Setup Guide",
+         "content": "## Step 1: Install MySQL...",
+         "reason": "You must complete \"Database Setup Guide\" before \"Advanced MySQL Tuning\"."
+       },
+       "prerequisites_cleared": false
+     }
    }
-   ```
+  ```
+
+**Alternate Flow — Ambiguous:**
+
+1. Steps 1–3 same as above.
+2. Two or more matching skills tie on `created_at`.
+3. System logs `outcome = "ambiguous"` and returns JSON:
+  ```json
+   {
+     "status": "ambiguous",
+     "trigger": "database_setup",
+     "message": "Multiple skills match this trigger. Provide a narrower trigger.",
+     "candidates": [
+       { "skill_id": 7, "skill_name": "Database Setup Guide" }
+     ]
+   }
+  ```
 
 **Alternate Flow — Not Found:**
 
 1. Steps 1–3 same as above.
 2. No skill matches the trigger keyword.
 3. System returns JSON: `{ "status": "not_found", "message": "No skill matches that trigger." }`
-4. No log entry is created.
+4. System logs `outcome = "not_found"` with `skill_id = null`.
 
 **Alternate Flow — Auth Failure:**
 
 1. Agent sends a request without `x-api-key` header or with an invalid key.
 2. Middleware returns HTTP 401 ("API key required") or HTTP 403 ("Invalid API key").
 
-**Postconditions:** The `agent_logs` table has a new entry recording the query outcome, agent identity, and source IP.
+**Postconditions:** The `agent_logs` table has a new entry recording the query outcome, agent identity, session, platform, and source IP.
 
 ---
 
 ## UC-4: View Skill Tree
 
-| Field | Value |
-|-------|-------|
-| **Actor(s)** | Developer |
-| **Preconditions** | Server is running |
-| **Trigger** | Developer navigates to `/dashboard/tree` |
+
+| Field             | Value                                    |
+| ----------------- | ---------------------------------------- |
+| **Actor(s)**      | Developer                                |
+| **Preconditions** | Server is running                        |
+| **Trigger**       | Developer navigates to `/dashboard/tree` |
+
 
 **Main Flow:**
 
@@ -206,17 +243,19 @@
 
 ## UC-5: View Agent Logs
 
-| Field | Value |
-|-------|-------|
-| **Actor(s)** | Developer |
+
+| Field             | Value                                      |
+| ----------------- | ------------------------------------------ |
+| **Actor(s)**      | Developer                                  |
 | **Preconditions** | At least one agent query has been recorded |
-| **Trigger** | Developer navigates to `/dashboard/logs` |
+| **Trigger**       | Developer navigates to `/dashboard/logs`   |
+
 
 **Main Flow:**
 
 1. Developer navigates to `/dashboard/logs`.
 2. System queries the 100 most recent `agent_logs` entries, joined with the `skills` table to resolve skill names.
-3. System renders a table with columns: Log ID, Skill Name (linked to detail page), Outcome (`success` or `prerequisite_blocked`), Agent ID, Client IP, Timestamp.
+3. System renders a table with columns: Log ID, Skill Name (linked to detail page), Outcome (`success`, `intercept`, `not_found`, or `ambiguous`), Agent ID, Client IP, Timestamp.
 4. Developer reviews the log to understand which skills agents are querying, which are being blocked by prerequisites, and which agent identities and IP addresses are making the calls.
 
 **Alternate Flows:**
@@ -229,11 +268,13 @@
 
 ## UC-6: Bulk Import Fabric Patterns
 
-| Field | Value |
-|-------|-------|
-| **Actor(s)** | Developer (CLI) |
+
+| Field             | Value                                                             |
+| ----------------- | ----------------------------------------------------------------- |
+| **Actor(s)**      | Developer (CLI)                                                   |
 | **Preconditions** | BraiMD server is running and reachable; internet access to GitHub |
-| **Trigger** | Developer runs `node scripts/import_fabric.js` |
+| **Trigger**       | Developer runs `node scripts/import_fabric.js`                    |
+
 
 **Main Flow:**
 
@@ -276,3 +317,4 @@
                     │                                         │
                     └─────────────────────────────────────────┘
 ```
+
