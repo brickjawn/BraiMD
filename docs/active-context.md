@@ -17,6 +17,7 @@ Purpose: shared integration context for parallel agent work across BraiMD and Op
 - Method: `GET`
 - Path: `/api/skills/search`
 - Query: `?trigger=<keyword>`
+- Alias/backcompat path: `/api/skills?trigger=<keyword>`
 - Required header: `x-api-key: <raw key>`
 - Optional tracing headers:
   - `X-Agent-ID`
@@ -73,6 +74,10 @@ From `openclaw-drop-in/BraiMDService.ts`:
   - creates baseline tables + seed + `schema_migrations`
 - `002_nullable_user_fk` in `migrations/002_nullable_user_fk.sql`
   - `skills.user_id` is `NULL DEFAULT 1` (prototype scaffolding)
+- `003_skill_versions` in `migrations/003_skill_versions.sql`
+  - `skill_versions` stores append-only content history
+  - `skills.active_version_id` points at active content
+  - `skills.content` is removed to prevent divergent content sources
 
 ## 5) Parallel work lanes
 
@@ -80,7 +85,6 @@ From `openclaw-drop-in/BraiMDService.ts`:
 
 - Keep `/api/skills/search` stable until OpenClaw adopts any new routes.
 - Next planned migrations (tracked separately):
-  - `003` skill versioning (`skill_versions` + `skills.active_version_id`)
   - `004` operational audit surface (`skill_audit_log`)
   - `005` `agents` + `agent_skills` junction
   - `006` OpenClaw-facing `/skills/:slug/active` and `/agents/:slug/bundle`

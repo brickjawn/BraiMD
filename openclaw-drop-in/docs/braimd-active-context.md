@@ -1,6 +1,6 @@
 # BraiMD API Context Mirror (for OpenClaw)
 
-Last synced: 2026-04-21  
+Last synced: 2026-04-25  
 Source: `BraiMD/docs/active-context.md`
 
 Purpose: keep OpenClaw work BraiMD-aware without switching repos.
@@ -13,6 +13,8 @@ Purpose: keep OpenClaw work BraiMD-aware without switching repos.
 - Path: `/api/skills/search`
 - Query: `?trigger=<keyword>`
 - Required header: `x-api-key: <raw key>`
+- Alias: `/api/skills?trigger=<keyword>` currently delegates to the same
+  handler, but OpenClaw should keep using `/api/skills/search`.
 - Optional trace headers:
   - `X-Agent-ID`
   - `X-Session-ID`
@@ -56,6 +58,8 @@ Current BraiMD migration baseline relevant to OpenClaw:
 
 - `001_initial` (explicit InnoDB + utf8mb4 + utf8mb4_unicode_ci)
 - `002_nullable_user_fk` (`skills.user_id` is `NULL DEFAULT 1`)
+- `003_skill_versions` (`skill_versions` stores active/history content;
+  `skills.active_version_id` points at the active version)
 
 ## 5) Forward compatibility notes
 

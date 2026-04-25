@@ -29,21 +29,24 @@ Branch: `cursor/migrations-002-nullable-user-fk-f4b2-stacked`
 ### Applied/implemented
 
 1. `001_initial`
-   - Baseline schema in migration form.
-   - Explicit `InnoDB`, `utf8mb4`, `utf8mb4_unicode_ci`.
-   - Adds `schema_migrations`.
-
+  - Baseline schema in migration form.
+  - Explicit `InnoDB`, `utf8mb4`, `utf8mb4_unicode_ci`.
+  - Adds `schema_migrations`.
 2. `002_nullable_user_fk`
-   - `skills.user_id` -> `NULL DEFAULT 1`.
-   - Scaffolding for Phase 2 auth without breaking Phase 1 behavior.
-   - API create path allows omitted/null `user_id` and defaults to seed user `1`.
+  - `skills.user_id` -> `NULL DEFAULT 1`.
+  - Scaffolding for Phase 2 auth without breaking Phase 1 behavior.
+  - API create path allows omitted/null `user_id` and defaults to seed user `1`.
+3. `003_skill_versions`
+  - Adds `skill_versions` content history.
+  - Adds `skills.active_version_id`.
+  - Backfills v1 published versions.
+  - Drops `skills.content`; active content is joined from `skill_versions`.
 
 ### Planned sequence
 
-3. `003`: skill versioning (`skill_versions` + `skills.active_version_id`)  
-4. `004`: operational audit (`skill_audit_log`)  
-5. `005`: `agents` + `agent_skills` junction  
-6. `006`: OpenClaw-facing routes (`/skills/:slug/active`, `/agents/:slug/bundle`)
+1. `004`: operational audit (`skill_audit_log`)
+2. `005`: `agents` + `agent_skills` junction
+3. `006`: OpenClaw-facing routes (`/skills/:slug/active`, `/agents/:slug/bundle`)
 
 ## Current BraiMD <-> OpenClaw contract (must remain stable for now)
 
@@ -52,6 +55,7 @@ Branch: `cursor/migrations-002-nullable-user-fk-f4b2-stacked`
 - Method: `GET`
 - Path: `/api/skills/search`
 - Query: `?trigger=<keyword>`
+- Alias: `/api/skills?trigger=<keyword>` (delegates to same controller path)
 - Required header: `x-api-key: <raw key>`
 - Optional tracing headers:
   - `X-Agent-ID`
@@ -66,6 +70,7 @@ Branch: `cursor/migrations-002-nullable-user-fk-f4b2-stacked`
 - `ambiguous`
 
 OpenClaw drop-in parser location:
+
 - `openclaw-drop-in/BraiMDService.ts`
 
 ## Environment mapping
